@@ -1,0 +1,25 @@
+---
+- name: Add ll alias
+  lineinfile:
+    path: ~root/.bashrc
+    line: "alias ll='ls -l --color=auto'"
+    owner: root
+    regexp: "^alias ll='ls -l --color=auto'$"
+    state: present
+    insertafter: EOF
+    create: true
+
+# because it restricts languages inside ISO
+# to only English (default language of system)
+- name: Remove lang macro
+  file:
+    path: /etc/rpm/macros.image-language-conf
+    state: absent
+    force: yes
+
+- name: Install product Pungi
+  community.general.copr:
+    name: "soksanichenko/Pungi"
+    host: "build.almalinux.org"
+    chroot: "almalinux-{{ os_version }}-{{ os_arch }}"
+...

@@ -1,0 +1,9 @@
+[Unit]
+Description=Synchronize AlmaLinux local repos through DNF reposync
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/{{ update_unit_name }}.sh
+
+[Install]
+WantedBy=multi-user.target

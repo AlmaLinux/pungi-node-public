@@ -1,0 +1,36 @@
+---
+- name: Create update unit
+  template:
+    dest: "{{ item.dest }}"
+    src: "{{ item.src }}"
+    group: "root"
+    owner: "root"
+    mode: "{{ item.mode }}"
+  with_items:
+    - dest: "/usr/local/bin/{{ update_unit_name }}.sh"
+      src: "reposync.sh.j2"
+      mode: "0755"
+    - dest: "/etc/systemd/system/{{ update_unit_name }}.service"
+      src: "reposync.service.j2"
+      mode: "0644"
+    - dest: "/etc/systemd/system/{{ update_unit_name }}.timer"
+      src: "reposync.timer.j2"
+      mode: "0644"
+
+- name: Enable update service
+  systemd:
+    name: "{{ update_unit_name }}.service"
+    state: stopped
+    enabled: true
+    masked: no
+    daemon_reload: yes
+
+- name: Enable update timer
+  systemd:
+    name: "{{ update_unit_name }}.timer"
+    state: started
+    enabled: true
+    masked: no
+    daemon_reload: yes
+
+...

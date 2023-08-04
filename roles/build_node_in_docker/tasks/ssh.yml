@@ -1,0 +1,17 @@
+---
+- name: Disable strict host key checking
+  lineinfile:
+    path: "/root/.ssh/config"
+    regexp: '^StrictHostKeyChecking no$'
+    line: 'StrictHostKeyChecking no'
+    state: present
+    insertbefore: BOF
+    create: yes
+
+- name: Set authorized keys
+  authorized_key:
+    key: "{{ item }}"
+    user: "root"
+    state: present
+  with_items: "{{ ssh_public_keys }}"
+...

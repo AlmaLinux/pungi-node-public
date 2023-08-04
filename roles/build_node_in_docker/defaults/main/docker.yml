@@ -1,0 +1,8 @@
+---
+docker_container_name: "pungi_build_node_{{ os_name }}_{{ os_version }}"
+docker_image_arches_dict:
+  x86_64: "amd64"
+  aarch64: "arm64v8"
+  ppc64le: "ppc64le"
+  s390x: "s390x"
+...
