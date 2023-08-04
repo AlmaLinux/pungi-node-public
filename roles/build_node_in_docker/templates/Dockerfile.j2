@@ -1,0 +1,12 @@
+FROM {{ docker_image_name }}:{{ item }} AS {{ os_name }}_{{ item }}_{{ os_arch }}
+RUN dnf install {{ docker_preinstalled_dnf_packages | join(' ') }} -y
+RUN ssh-keygen -A
+EXPOSE 22
+RUN mkdir -p /root/.ssh && touch /root/.ssh/authorized_keys && chown -R root:root /root/.ssh && chmod 600 /root/.ssh/authorized_keys
+{% for ssh_public_key in ssh_public_keys %}
+RUN echo "{{ ssh_public_key }}" >> /root/.ssh/authorized_keys
+{% endfor %}
+RUN mkdir -p /docker-entrypoint.d && chown -R root:root /docker-entrypoint.d
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["/usr/sbin/sshd", "-D"]

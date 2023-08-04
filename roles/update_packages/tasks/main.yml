@@ -1,0 +1,42 @@
+---
+- name: General task
+  block:
+    - name: Ansible preparation
+      block:
+        - import_tasks: ansible.yml
+      tags:
+        - ansible
+    - name: Install/update DNF packages
+      block:
+        - import_tasks: dnf.yml
+          vars:
+            installed_packages: "{{ host_dnf_packages | difference(excluded_packages) if os_arch == 's390x' else host_dnf_packages }}"
+            dnf_state: "latest"
+          tags:
+            - host_dnf_packages
+        - import_tasks: dnf.yml
+          vars:
+            ansible_port: "{{ docker_sshd_port }}"
+            ansible_user: "root"
+            installed_packages: "{{ docker_dnf_packages }}"
+          tags:
+            - docker_dnf_packages
+        - import_tasks: dnf.yml
+          vars:
+            ansible_port: "{{ docker_sshd_port }}"
+            ansible_user: "root"
+            installed_packages: "{{ docker_preinstalled_dnf_packages }}"
+          tags:
+            - docker_dnf_packages
+        - name: Install Pip packages into docker
+          pip:
+            name: "{{ docker_pip_packages }}"
+            state: latest
+          vars:
+            ansible_port: "{{ docker_sshd_port }}"
+            ansible_user: "root"
+          tags:
+            - docker_pip_packages
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+
+...

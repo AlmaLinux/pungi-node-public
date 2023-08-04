@@ -1,0 +1,54 @@
+---
+- name: Ansible preparation
+  hosts: all
+  tasks:
+    - import_role:
+        name: update_packages
+        tasks_from: ansible.yml
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+
+- name: Install/update DNF packages outside a Docker container
+  hosts: hosts
+  tasks:
+    - import_role:
+        name: update_packages
+        tasks_from: dnf.yml
+      vars:
+        installed_packages: "{{ host_dnf_packages | difference(excluded_packages) if os_arch == 's390x' else host_dnf_packages }}"
+        dnf_state: "latest"
+      tags:
+        - host_dnf_packages
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+
+- name: Install/update DNF & Python packages inside a Docker container
+  hosts: dockers
+  tasks:
+    - import_role:
+        name: update_packages
+        tasks_from: dnf.yml
+      vars:
+        installed_packages: "{{ docker_dnf_packages }}"
+        dnf_state: "latest"
+      tags:
+        - docker_dnf_packages
+    - import_role:
+        name: update_packages
+        tasks_from: dnf.yml
+      vars:
+        installed_packages: "{{ docker_preinstalled_dnf_packages }}"
+        dnf_state: "latest"
+      tags:
+        - docker_dnf_packages
+    - pip:
+        name: "{{ docker_pip_packages }}"
+        state: latest
+      tags:
+        - docker_dnf_packages
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+...

@@ -1,0 +1,94 @@
+---
+- name: Outside of the docker container tasks
+  hosts: hosts
+  tasks:
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: service_dnf_repos.yml
+      tags:
+        - service_dnf_repos
+    - import_role:
+        name: update_packages
+        tasks_from: ansible.yml
+      tags:
+        - update_packages
+    - import_role:
+        name: update_packages
+        tasks_from: dnf.yml
+      vars:
+        installed_packages: "{{ host_dnf_packages | difference(excluded_packages) if os_arch == 's390x' else host_dnf_packages }}"
+      tags:
+        - update_packages
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: common.yml
+      tags:
+        - common
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: update_unit.yml
+      tags:
+        - update_unit
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: dnf_repos.yml
+      tags:
+        - dnf_repos
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: docker.yml
+      tags:
+        - docker
+  tags:
+    - outside_docker_container
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+
+- name: Inside of the docker container tasks
+  hosts: dockers
+  tasks:
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: docker_common.yml
+      tags:
+        - common_in_container
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: ssh.yml
+      tags:
+        - ssh
+    - import_role:
+        name: update_packages
+        tasks_from: dnf.yml
+      vars:
+        installed_packages: "{{ docker_dnf_packages }}"
+      tags:
+        - update_packages
+    - name: Install Pip packages into docker
+      pip:
+        name: "{{ docker_pip_packages }}"
+        state: latest
+      tags:
+        - docker_pip_packages
+  tags:
+    - inside_docker_container
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+
+- name: Outside of the docker container tasks
+  hosts: hosts
+  tasks:
+    - name: Restart docker containers
+      docker_container:
+        name: "pungi_build_node_{{ os_name }}_{{ item }}_{{ os_arch }}"
+        restart: yes
+      with_items: "{{ os_versions }}"
+  tags:
+    - dnf_repos
+    - outside_docker_container
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+...

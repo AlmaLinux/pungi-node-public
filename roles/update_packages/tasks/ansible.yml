@@ -1,0 +1,9 @@
+---
+- name: Install DNF packages for right works of Ansible
+  dnf:
+    name: "{{ ansible_packages }}"
+    state: "{{ 'present' if dnf_state is not defined else dnf_state }}"
+    update_cache: yes
+  vars:
+    ansible_python_interpreter: "/usr/libexec/platform-python"
+...

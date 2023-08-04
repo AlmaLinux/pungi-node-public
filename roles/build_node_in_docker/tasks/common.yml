@@ -1,0 +1,99 @@
+---
+
+- name: Create working directories
+  file:
+    path: "{{ work_directory_path}}/alma-{{ item }}-{{ os_arch }}"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: 0755
+  with_items: "{{ os_versions }}"
+  tags:
+    - always
+
+- name: Create multilib working directories
+  file:
+    path: "{{ work_directory_path}}/alma-{{ item }}-i686"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: 0755
+  with_items: "{{ os_versions }}"
+  tags:
+    - always
+  when: os_arch == 'x86_64' and arches.platform.multilib[os_arch]
+
+- name: Create building env directories
+  file:
+    path: "{{ work_directory_path}}/{{ distribution_name }}{{ item }}{{ os_arch }}"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: 0755
+  with_items: "{{ os_versions }}"
+  tags:
+    - always
+
+- name: Create building env directories
+  file:
+    path: "{{ work_directory_path}}/{{ distribution_name }}{{ item }}i686"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: 0755
+  with_items: "{{ os_versions }}"
+  tags:
+    - always
+  when: os_arch == 'x86_64' and arches.platform.multilib[os_arch]
+
+- name: Create repos directories
+  file:
+    path: "{{ repos_dir }}/{{ item.1 }}/{{ os_arch }}/{{ item.0 }}"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: 0755
+  with_nested:
+    - ["platform_repos", "specific_repos", "products_repos"]
+    - "{{ os_versions }}"
+
+- name: Create repos directories
+  file:
+    path: "{{ repos_dir }}/{{ item.1 }}/i686/{{ item.0 }}"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: 0755
+  with_nested:
+    - ["platform_repos", "specific_repos", "products_repos"]
+    - "{{ os_versions }}"
+  when: os_arch == 'x86_64' and arches.platform.multilib[os_arch]
+
+- name: Enable and start firewalld
+  systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+    masked: no
+
+- name: Permit traffic in default zone for some services
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+  with_items:
+    - "http"
+    - "ssh"
+
+- name: Permit traffic in default zone for SSH service of a docker container
+  ansible.posix.firewalld:
+    port: "{{ sshd_ports_in_containers[item] }}/tcp"
+    permanent: yes
+    state: enabled
+  with_items: "{{ os_versions }}"
+
+- name: Reload firewalld
+  systemd:
+    name: firewalld
+    state: reloaded
+...
