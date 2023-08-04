@@ -1,0 +1,113 @@
+---
+
+- name: Enable and start docker service
+  systemd:
+    name: docker
+    state: restarted
+    enabled: yes
+
+- name: Add user to Docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    group: "docker"
+  tags:
+    - docker_user
+
+- name: Add backend docker network
+  docker_network:
+    name: backend
+
+- name: Add public docker network
+  docker_network:
+    name: public
+    driver: bridge
+
+- name: Calculate name of a base docker image
+  set_fact:
+    docker_image_name: "{{ docker_image_arches_dict[os_arch] }}/almalinux"
+
+- name: Prepare Dockerfile
+  template:
+    dest: "/tmp/Dockerfile_{{ os_arch }}_{{ item }}"
+    src: "Dockerfile.j2"
+  with_items: "{{ os_versions }}"
+
+- name: Copy entrypoint file
+  copy:
+    dest: "/tmp/docker-entrypoint.sh"
+    src: "docker-entrypoint.sh"
+    owner: root
+    group: root
+    mode: 0655
+
+- name: Build docker image
+  docker_image:
+    name: "{{ os_name }}_{{ item }}_{{ os_arch }}"
+    force_source: yes
+    build:
+      path: "/tmp"
+      pull: yes
+      network: host
+      target: "{{ os_name }}_{{ item }}_{{ os_arch }}"
+      dockerfile: "Dockerfile_{{ os_arch }}_{{ item }}"
+    source: build
+  with_items: "{{ os_versions }}"
+
+- name: Prepare ulimits for the container
+  block:
+    - name: Read host soft limit of open files
+      ansible.builtin.command: ulimit -Sn
+      register: ulimit_sn
+
+    - name: Read host hard limit of open files
+      ansible.builtin.command: ulimit -Hn
+      register: ulimit_hn
+
+    - name: Set limits of open files for the container
+      set_fact:
+        container_ulimits: "nofile:{{ ulimit_sn['stdout'] }}:{{ ulimit_hn['stdout'] }}"
+
+
+- name: Enable translation through qemu-user-static
+  docker_container:
+    privileged: yes
+    name: "qemu-user-static-container"
+    image: "multiarch/qemu-user-static"
+    command: "--reset -p yes"
+  when: ansible_architecture != os_arch
+
+- name: Up the docker container
+  docker_container:
+    privileged: yes
+    ulimits:
+      - "{{ container_ulimits }}"
+    name: "pungi_build_node_{{ os_name }}_{{ item }}_{{ os_arch }}"
+    image: "{{ os_name }}_{{ item }}_{{ os_arch }}"
+    state: started
+    restart: yes
+    restart_policy: unless-stopped
+    hostname: "{{ os_name }}_{{ item }}_{{ os_arch }}"
+    published_ports:
+      - "{{ sshd_ports_in_containers[item] }}:22"
+    mounts:
+      - source: "{{ work_directory_path }}"
+        target: "{{ work_directory_path }}"
+        read_only: no
+        type: bind
+      - source: "{{ repos_dir }}"
+        target: "{{ repos_dir }}"
+        read_only: yes
+        type: bind
+      - source: "/dev"
+        target: "/dev/"
+        read_only: no
+        type: bind
+    tmpfs:
+      - "/tmp"
+      - "/run"
+    log_driver: "json-file"
+    log_options:
+      max-size: "200m"
+      max-file: "5"
+  with_items: "{{ os_versions }}"
+...

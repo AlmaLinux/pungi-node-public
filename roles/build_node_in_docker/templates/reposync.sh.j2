@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+{% for os_version in os_versions %}
+mirror_path="{{ work_directory_path }}/alma-{{ os_version }}-{{ os_arch }}"
+specific_repos="{{ repos_dir }}/{{ os_version }}/{{ os_arch }}/specific_repos"
+platform_repos="{{ repos_dir }}/{{ os_version }}/{{ os_arch }}/platform_repos"
+products_repos="{{ repos_dir }}/{{ os_version }}/{{ os_arch }}/products_repos"
+if [[ ! -z "$(ls -A ${specific_repos})" ]]; then
+    sudo dnf reposync --setopt=reposdir="${specific_repos}" -p "${mirror_path}" --delete --downloadcomps --remote-time --enablerepo=* --download-metadata
+fi
+if [[ ! -z "$(ls -A ${platform_repos})" ]]; then
+    sudo dnf reposync --setopt=reposdir="${platform_repos}" -p "${mirror_path}" --delete --downloadcomps --remote-time --enablerepo=* --download-metadata
+fi
+if [[ ! -z "$(ls -A ${products_repos})" ]]; then
+    sudo dnf reposync --setopt=reposdir="${products_repos}" -p "${mirror_path}-products_repos" --delete --downloadcomps --remote-time --enablerepo=* --download-metadata
+fi
+{% if os_arch == "x86_64" %}
+specific_repos="{{ repos_dir }}/{{ os_version }}/i686/specific_repos"
+platform_repos="{{ repos_dir }}/{{ os_version }}/i686/platform_repos"
+products_repos="{{ repos_dir }}/{{ os_version }}/i686/products_repos"
+mirror_path="{{ work_directory_path }}/alma-{{ os_version }}-i686"
+if [[ ! -z "$(ls -A ${specific_repos})" ]]; then
+    sudo dnf reposync --setopt=reposdir="${specific_repos}" -p "${mirror_path}" --delete --downloadcomps --remote-time --enablerepo=* --download-metadata
+fi
+if [[ ! -z "$(ls -A ${platform_repos})" ]]; then
+    sudo dnf reposync --setopt=reposdir="${platform_repos}" -p "${mirror_path}" --delete --downloadcomps --remote-time --enablerepo=* --download-metadata
+fi
+if [[ ! -z "$(ls -A ${products_repos})" ]]; then
+    sudo dnf reposync --setopt=reposdir="${products_repos}" -p "${mirror_path}-products_repos" --delete --downloadcomps --remote-time --enablerepo=* --download-metadata
+fi
+{% endif %}
+{% endfor %}
+exit 0
