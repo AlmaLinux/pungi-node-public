@@ -69,11 +69,12 @@
       pip:
         name: "{{ docker_pip_packages }}"
         state: latest
+        executable: "pip3.9"
       tags:
         - docker_pip_packages
   tags:
     - inside_docker_container
-  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  connection: "ssh"
   vars:
     ansible_python_interpreter: "/usr/bin/env python3"
 

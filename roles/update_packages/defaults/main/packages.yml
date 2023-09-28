@@ -17,6 +17,7 @@ host_dnf_packages:
 excluded_packages: []
 
 docker_dnf_packages:
+  - "python39"
   - "strace"
   - "pungi"
   - "lorax"
@@ -26,5 +27,6 @@ docker_dnf_packages:
   - "bash-completion"
 
 docker_pip_packages:
+  - "requests"
   - "jinja2"
 ...
