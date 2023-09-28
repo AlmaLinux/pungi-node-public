@@ -40,6 +40,14 @@
     group: root
     mode: 0655
 
+- name: Enable translation through qemu-user-static
+  docker_container:
+    privileged: yes
+    name: "qemu-user-static-container"
+    image: "multiarch/qemu-user-static"
+    command: "--reset -p yes"
+  when: ansible_architecture != os_arch
+
 - name: Build docker image
   docker_image:
     name: "{{ os_name }}_{{ item }}_{{ os_arch }}"
@@ -66,15 +74,6 @@
     - name: Set limits of open files for the container
       set_fact:
         container_ulimits: "nofile:{{ ulimit_sn['stdout'] }}:{{ ulimit_hn['stdout'] }}"
-
-
-- name: Enable translation through qemu-user-static
-  docker_container:
-    privileged: yes
-    name: "qemu-user-static-container"
-    image: "multiarch/qemu-user-static"
-    command: "--reset -p yes"
-  when: ansible_architecture != os_arch
 
 - name: Up the docker container
   docker_container:
