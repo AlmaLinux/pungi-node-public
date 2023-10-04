@@ -1,0 +1,32 @@
+---
+
+ansible_packages:
+  - "python3"
+
+host_dnf_packages:
+  - "vim-enhanced"
+  - "strace"
+  - "rsync"
+  - "python3-pip"
+  - "firewalld"
+  - "python3-docker"
+  - "python3-requests"
+  - "docker-ce"
+  - "bash-completion"
+
+excluded_packages: []
+
+docker_dnf_packages:
+  - "python39"
+  - "strace"
+  - "pungi"
+  - "lorax"
+  - "lorax-templates-almalinux"
+  - "fus"
+  - "genisoimage"
+  - "bash-completion"
+
+docker_pip_packages:
+  - "requests"
+  - "jinja2"
+...

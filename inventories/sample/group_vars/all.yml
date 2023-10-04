@@ -1,0 +1,21 @@
+---
+sshd_ports_in_containers:
+  8: 6023
+  9: 6022
+distribution_name: "AlmaLinux"
+os_name: "{{ distribution_name | lower }}"
+ssh_public_keys:
+  - "<place here your public ssh key>"
+docker_preinstalled_dnf_packages:
+  - "openssh-server"
+  - "openssh-clients"
+  - "python3"
+  - "python3-pip"
+  - "cronie"
+  - "procps-ng"
+  - "sudo"
+  - "dnf-plugins-core"
+  - "vim-enhanced"
+  - "gpg"
+repos_dir: "/etc/yum.repos.d/{{ os_name }}"
+...

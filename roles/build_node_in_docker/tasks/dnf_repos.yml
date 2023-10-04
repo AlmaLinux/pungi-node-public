@@ -1,0 +1,103 @@
+---
+- name: Deploy specific DNF repos to a build node
+  yum_repository:
+    name: "{{ item.0.name | format(version=item.1) }}"
+    description: "{{ item.0.description | format(version=item.1) }}"
+    baseurl: "{{ item.0.baseurl | format(version=item.1) }}"
+    gpgkey: "{{ item.0.gpgkey | format(version=item.1) }}"
+    enabled: "{{ item.0.enabled }}"
+    group: "{{ item.0.group }}"
+    owner: "{{ item.0.owner }}"
+    mode: "{{ item.0.mode }}"
+    timeout: "{{ item.0.timeout | default(omit) }}"
+    reposdir: "{{ repos_dir }}/{{ item.1 }}/{{ os_arch }}/specific_repos"
+  with_nested:
+    - "{{ specific_dnf_repos }}"
+    - "{{ os_versions }}"
+  tags:
+    - specific_dnf_repos
+
+- name: Deploy platform DNF repos to a build node
+  yum_repository:
+    file: "platform-{{ os_name }}-{{ item.2 }}"
+    name: "platform-{{ os_name }}-{{ item.2 }}-{{ item.0 }}-{{ item.1 }}"
+    description: "platform-{{ os_name }}-{{ item.2 }}-{{ item.0 }}-{{ item.1 }}"
+    baseurl: "https://build.almalinux.org/pulp/content/prod/{{ os_name }}-{{ item.2 }}-{{ item.0 }}-{{ item.1 }}/"
+    enabled: no
+    group: root
+    owner: root
+    mode: 0644
+    async: no
+    timeout: "120"
+    reposdir: "{{ repos_dir }}/{{ item.2 }}/{{ os_arch }}/platform_repos"
+  with_nested:
+    - "{{ platform_repos[os_arch] }}"
+    - "{{ arches.platform[os_arch] }}"
+    - "{{ os_versions }}"
+  tags:
+    - platform_dnf_repos
+  when: item.0 not in per_version_absent_repos[item.2]
+
+- name: Deploy platform multilib DNF repos to a build node
+  yum_repository:
+    file: "platform-{{ os_name }}-{{ item.2 }}"
+    name: "platform-{{ os_name }}-{{ item.2 }}-{{ item.0 }}-{{ item.1 }}"
+    description: "platform-{{ os_name }}-{{ item.2 }}-{{ item.0 }}-{{ item.1 }}"
+    baseurl: "https://build.almalinux.org/pulp/content/prod/{{ os_name }}-{{ item.2 }}-{{ item.0 }}-{{ item.1 }}/"
+    enabled: no
+    group: root
+    owner: root
+    mode: 0644
+    async: no
+    timeout: "120"
+    reposdir: "{{ repos_dir }}/{{ item.2 }}/i686/platform_repos"
+  with_nested:
+    - "{{ platform_repos[os_arch] }}"
+    - "{{ arches.platform.multilib[os_arch] }}"
+    - "{{ os_versions }}"
+  tags:
+    - platform_dnf_repos
+  when: os_arch in arches.platform.multilib and item.0 not in per_version_absent_repos[item.2]
+
+- name: Deploy product DNF repos to a build node
+  yum_repository:
+    file: "product-{{ os_name }}-{{ item.2 }}"
+    name: "product-{{ item.0.name }}-{{ item.0.platform }}-{{ item.1 }}"
+    description: "product-{{ item.0.name }}-{{ item.0.platform }}-{{ item.1 }}"
+    baseurl: "https://build.almalinux.org/pulp/content/builds/{{ item.0.name }}-{{ item.0.platform }}-{{ item.1 }}-dr/"
+    enabled: no
+    group: root
+    owner: root
+    mode: 0644
+    async: no
+    timeout: "120"
+    reposdir: "{{ repos_dir }}/{{ item.2 }}/{{ os_arch }}/products_repos"
+  with_nested:
+    - "{{ products }}"
+    - "{{ arches.product[os_arch] }}"
+    - "{{ os_versions }}"
+  tags:
+    - product_dnf_repos
+  when: item.0.version == item.2
+
+- name: Deploy product multilib DNF repos to a build node
+  yum_repository:
+    file: "product-{{ os_name }}-{{ item.1 }}"
+    name: "product-{{ item.0.name }}-{{ item.0.platform }}-{{ item.1 }}"
+    description: "product-{{ item.0.name }}-{{ item.0.platform }}-{{ item.1 }}"
+    baseurl: "https://build.almalinux.org/pulp/content/builds/{{ item.0.name }}-{{ item.0.platform }}-{{ item.1 }}-dr/"
+    enabled: no
+    group: root
+    owner: root
+    mode: 0644
+    async: no
+    timeout: "120"
+    reposdir: "{{ repos_dir }}/{{ item.2 }}/i686/products_repos"
+  with_nested:
+    - "{{ products }}"
+    - "{{ arches.product.multilib[os_arch] }}"
+    - "{{ os_versions }}"
+  tags:
+    - product_dnf_repos
+  when: os_arch in arches.product.multilib and item.0.version == item.2
+...

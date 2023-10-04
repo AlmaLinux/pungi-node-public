@@ -1,0 +1,19 @@
+---
+- name: Install epel
+  dnf:
+    name: "epel-release"
+    state: latest
+    update_cache: yes
+  tags:
+    - dnf_packages
+
+- name: Install DNF packages
+  dnf:
+    name: "{{ installed_packages }}"
+    state: latest
+    enablerepo:
+      - epel
+    update_cache: yes
+  tags:
+    - dnf_packages
+...

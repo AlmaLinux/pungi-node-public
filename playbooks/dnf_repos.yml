@@ -1,0 +1,27 @@
+---
+- name: Deploy dnf repos
+  hosts: hosts
+  tasks:
+    - import_role:
+        name: build_node_in_docker
+        tasks_from: dnf_repos.yml
+      tags:
+        - dnf_repos
+  tags:
+    - inside_docker_container
+  connection: "{{ 'local' if ansible_host in ['localhost', '127.0.0.1'] else 'ssh' }}"
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+
+- name: Outside of the docker container tasks
+  hosts: hosts
+  tasks:
+    - name: Restart docker containers
+      docker_container:
+        name: "pungi_build_node_{{ os_name }}_{{ item }}_{{ os_arch }}"
+        restart: yes
+      with_items: "{{ os_versions }}"
+  tags:
+    - dnf_repos
+    - outside_docker_container
+...
